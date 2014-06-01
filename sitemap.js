@@ -35,6 +35,7 @@ sitemap.node.prototype.each = function(callback) {
 
 sitemap.node.prototype.traverse = function(callback) {
   for (var i in this.children) {
+    if (this.data !== undefined && i === this.data.url) continue;
     callback(i, this.children[i]);
     this.children[i].traverse(callback);
   }
