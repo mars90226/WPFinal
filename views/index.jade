@@ -2,6 +2,10 @@ extends layout
 
 block content
   h1= title
+  form#input(method="get", action="/")
+    label Input the url you want to crawl: 
+    input#crawl_url(type="text", name="url")
+    button#submit Submit
   
   script!= "var tempNodes = " + JSON.stringify(nodes) + ";"
   script.
@@ -34,16 +38,16 @@ block content
 
 
     var width = 960,
-        height = 500;
+        height = 450;
         
-    var radius = [6, 30]
+    var radius = [30, 60]
 
     var force = d3.layout.force()
         .nodes(d3.values(nodes))
         .links(links)
         .size([width, height])
-        .linkDistance(60)
-        .charge(-300)
+        .linkDistance(150)
+        .charge(-450)
         .on("tick", tick)
         .start();
 
@@ -57,10 +61,10 @@ block content
       .enter().append("marker")
         .attr("id", function(d) { return d; })
         .attr("viewBox", "0 -5 10 10")
-        .attr("refX", 15)
-        .attr("refY", -1.5)
-        .attr("markerWidth", 6)
-        .attr("markerHeight", 6)
+        .attr("refX", 25)
+        .attr("refY", 0)
+        .attr("markerWidth", 10)
+        .attr("markerHeight", 10)
         .attr("orient", "auto")
       .append("path")
         .attr("d", "M0,-5L10,0L0,5");
@@ -100,8 +104,12 @@ block content
     function linkArc(d) {
       var dx = d.target.x - d.source.x,
           dy = d.target.y - d.source.y,
-          dr = Math.sqrt(dx * dx + dy * dy);
-      return "M" + d.source.x + "," + d.source.y + "A" + dr + "," + dr + " 0 0,1 " + d.target.x + "," + d.target.y;
+          dr = 0; // Math.sqrt(dx * dx + dy * dy);
+      var startX = d.source.x,
+          startY = d.source.y,
+          endX = d.target.x, // - dx * 0.165,
+          endY = d.target.y; // - dy * 0.165;
+      return "M" + startX + "," + startY + "A" + dr + "," + dr + " 0 0,1 " + endX + "," + endY;
     }
 
     function transform(d) {

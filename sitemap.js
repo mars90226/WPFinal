@@ -13,6 +13,14 @@ sitemap.node.prototype.get = function(key) {
   return this.children[key];
 };
 
+sitemap.node.prototype.childrenSize = function() {
+  var count = 0;
+  for (var i in this.children) {
+    count++;
+  }
+  return count;
+};
+
 sitemap.node.prototype.find = function(key) {
   if (this.children[key] !== undefined) {
     return this.children[key];

@@ -1,5 +1,7 @@
 body {
-  padding: 50px;
+  padding-top: 10px;
+  padding-left: 50px;
+  padding-right: 50px;
   font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
 }
 
@@ -9,8 +11,8 @@ a {
 
 .link {
   fill: none;
-  stroke: #666;
-  stroke-width: 1.5px;
+  stroke: rgb(250, 100, 100);
+  stroke-width: 2px;
 }
 
 #licensing {
@@ -26,13 +28,34 @@ a {
 }
 
 circle {
-  fill: #ccc;
-  stroke: #333;
+  fill: rgb(210, 230, 230);
+  stroke: rgb(180, 200, 200);
   stroke-width: 1.5px;
 }
 
+marker {
+  stroke: rgb(250, 100, 100);
+  fill: rgb(250, 100, 100);
+}
+
 text {
-  font: 10px sans-serif;
+  font: 20px sans-serif;
   pointer-events: none;
   text-shadow: 0 1px 0 #fff, 1px 0 0 #fff, 0 -1px 0 #fff, -1px 0 0 #fff;
+}
+
+svg {
+  border: 5px solid rgb(200, 200, 200);
+}
+
+#input {
+  margin: 10px;
+}
+
+input {
+  margin-left: 10px;
+}
+
+#submit {
+  margin-left: 10px;
 }
