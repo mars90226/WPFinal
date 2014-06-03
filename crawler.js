@@ -1,6 +1,6 @@
 var request = require('request'),
-    cheerio = require('cheerio'),
-    iconv = require('iconv-lite');
+cheerio = require('cheerio'),
+iconv = require('iconv-lite');
 var URL = require('url');
 var Sitemap = require('./sitemap');
 
@@ -14,7 +14,7 @@ function validUrl(url) {
 
   path = path.replace(/\?.*$/, "");
   path = path.replace(/\#.*$/, "");
-  
+
   var isHttp = true;
   if (url.protocol !== null && url.protocol !== "http:") isHttp = false;
   return !path.match(/\.(?!(?:html?|php|aspx?)$)[a-z]+$/i) && isHttp;
@@ -24,83 +24,98 @@ function grabUrl(url, callback) {
   var cache = {};
   var sitemap = new Sitemap.node();
   var jobCount = 0;
-  
-  function crawl(url) {
+
+  function crawl(url, cut) {
     request({
       url: url,
+      encoding: 'binary',
       pool: {
         maxSockets: maxConnection
       }
-    }, function(error, response, body) {   
+    }, function(error, response, body) {
       jobCount--;
       if (!error && response.statusCode == 200) {
         var url = response.request.href;
-        url = url.replace(/\?.*$/, "");
-        url = url.replace(/\#.*$/, "");
+        var keyUrl = url;
+        if (keyUrl[keyUrl.length-1] === '/') {
+          keyUrl = keyUrl.substring(0, keyUrl.length - 1);
+        }
         var $ = cheerio.load(body);
-        //if ($("meta[content$='charset=big5']").length > 0) {
-        //  $ = cheerio.load(iconv.decode(new Buffer(body), "big5"));
-        //}
-        
+
         var title = $('title').text();
-        //console.log(url);
-        //console.log(jobCount);
-        //var count = 0;
-        //for (var i in cache) {
-        //  count++;
-        //}
-        //console.log(count);
-        
-        var parent = sitemap.find(url);
+        if ($('meta').filter(function() {
+          return (/big5$/i).test($(this).attr('content'));
+        }).length > 0) {
+          //$ = cheerio.load(iconv.decode(new Buffer(body), "big5"));
+          //console.log("detect big5");
+          title = iconv.decode(title, "big5");
+        }
+        else {
+          title = iconv.decode(title, "utf8");
+        }
+        //console.log("title: " + title);
+        //console.log("Url: " + url);
+        //console.log("Cut: " + cut);
+
+        var parent = sitemap.find(keyUrl);
         if (parent === undefined) {
-          sitemap.put(url, new Sitemap.node({title: title, url: url}, sitemap));
-          parent = sitemap.get(url);
-          cache[url] = parent;
+          sitemap.put(keyUrl, new Sitemap.node({title: title, url: keyUrl}, sitemap));
+          parent = sitemap.get(keyUrl);
+          cache[keyUrl] = parent;
         } else {
-          parent.data = {title: title, url: url};
+          parent.data = {title: title, url: keyUrl};
         }
         //if (parent.parent !== undefined)
         //  console.log("Children: " + parent.parent.childrenSize());
 
-        $('a').each(function(index, a) {
-          //console.log("Href: " + $(a).attr('href'));
-          var href = $(a).attr('href');
-          var tmpUrl = url;
-          if (validUrl(href)) {
-            var match1 = href.match(/\.\.\//g);
-            tmpUrl = tmpUrl.substring(0, tmpUrl.lastIndexOf('/'));
-            if(match1){
-              for(var i = 0; i < match1.length; i++){
-                tmpUrl = tmpUrl.substring(0, tmpUrl.lastIndexOf('/'));
-              }
-              tmpUrl = tmpUrl + href.substring(match1.length * 3 - 1);
-            } else if(href.match(/^\.\//)){
-              tmpUrl = tmpUrl + href.substring(1);
-            } else if(href.match(/^\//)){
-              tmpUrl = tmpUrl + href.substring(0);
-            }else if(href.match(/^\/\//)){
-              tmpUrl = tmpUrl + href.substring(1);              
-            } else if(href.match(/http:\/\//)){
-              tmpUrl = href;
-            } else{
-              tmpUrl = tmpUrl + '/' + href;
-            }
-            if(URL.parse(url).host === URL.parse(tmpUrl).host){
-              if (cache[tmpUrl] !== undefined) {
-                // BUGFIX
-                //parent.put(tmpUrl, cache[tmpUrl]);   
+        if (cut !== true) {
+          $('a').each(function(index, a) {
+            //console.log("Href: " + $(a).attr('href'));
+            var href = $(a).attr('href');
+            var tmpUrl = url;
+            tmpUrl = tmpUrl.replace(/\?.*$/, "");
+            tmpUrl = tmpUrl.replace(/\#.*$/, "");
+            if (validUrl(href)) {
+              var match1 = href.match(/\.\.\//g);
+              tmpUrl = tmpUrl.substring(0, tmpUrl.lastIndexOf('/'));
+              var prefix = tmpUrl;
+              if (match1) {
+                for (var i = 0; i < match1.length; i++) {
+                  tmpUrl = tmpUrl.substring(0, tmpUrl.lastIndexOf('/'));
+                }
+                tmpUrl = tmpUrl + href.substring(match1.length * 3 - 1);
+              } else if (href.match(/^\.\//)) {
+                tmpUrl = tmpUrl + href.substring(1);
+              } else if (href.match(/^\//)) {
+                var parsedUrl = URL.parse(tmpUrl);
+                tmpUrl = parsedUrl.protocol + '//' + parsedUrl.hostname + href;
+              } else if (href.match(/^\/\//)) {
+                tmpUrl = URL.parse(tmpUrl).protocol + href;
+              } else if (href.match(/http:\/\//)) {
+                tmpUrl = href;
               } else {
-                jobCount++;
-                var node = new Sitemap.node({title: "", url: tmpUrl}, parent);
-                parent.put(tmpUrl, node);
-                cache[tmpUrl] = node;
-                process.nextTick(function(){
-                  crawl(tmpUrl);
-                });
+                tmpUrl = tmpUrl + '/' + href;
+              }
+              var tmpPrefix = tmpUrl.substring(0, tmpUrl.lastIndexOf('/'));
+              if (tmpUrl[tmpUrl.length-1] === '/') {
+                tmpUrl = tmpUrl.substring(0, tmpUrl.length - 1);
+              }
+              if (URL.parse(url).host === URL.parse(tmpUrl).host) {
+                if (cache[tmpUrl] !== undefined) {
+                  parent.put(tmpUrl, cache[tmpUrl]);
+                } else {
+                  jobCount++;
+                  var node = new Sitemap.node({title: "", url: tmpUrl}, parent);
+                  parent.put(tmpUrl, node);
+                  cache[tmpUrl] = node;
+                  process.nextTick(function(){
+                    crawl(tmpUrl, prefix !== tmpPrefix);
+                  });
+                }
               }
             }
-          }
-        });
+          });
+        }
       }
       if (jobCount === 0) {
         callback(sitemap);
@@ -108,7 +123,7 @@ function grabUrl(url, callback) {
     });
   }
   jobCount++;
-  crawl(url);
+  crawl(url, false);
 }
 
 // 'http://mirlab.org/jang/courses/webProgramming/onlineBook.asp'

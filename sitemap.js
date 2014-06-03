@@ -25,6 +25,7 @@ sitemap.node.prototype.find = function(key) {
   if (this.children[key] !== undefined) {
     return this.children[key];
   }
+
   var result = undefined;
   for (var i in this.children) {
     result = this.children[i].find(key);

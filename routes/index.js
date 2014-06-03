@@ -13,10 +13,11 @@ router.get('/', function(req, res) {
   }
   
   crawler(url, function(sitemap) {
-    var results = [], urlHash = {}, count = 0, nodes = [];
+    var urlHash = {}, count = 0, nodes = [];
     sitemap.traverse(function(url, node) {
-      urlHash[url] = count++;
-      //results.push([url, node]);
+      if (urlHash[node.data.url] === undefined) {
+        urlHash[node.data.url] = count++;
+      }
     });
     function traverse(node) {
       if (node.data !== undefined && nodes[urlHash[node.data.url]] === undefined) {
@@ -30,24 +31,12 @@ router.get('/', function(req, res) {
       for (var i in node.children) {
         if (node.data !== undefined && i === node.data.url) continue;
         if (node.data !== undefined) {
-          nodes[urlHash[node.data.url]].linkTo.push(urlHash[i]);
+          nodes[urlHash[node.data.url]].linkTo.push(urlHash[node.children[i].data.url]);
         }
         traverse(node.children[i]);
       }
     }
     traverse(sitemap);
-    
-    //for (var i in results) {
-    //  nodes[urlHash[results[i][0]]] = {
-    //    name: results[i][1].data.title,
-    //    linkTo: [0],
-    //    url: results[i][1].data.url
-    //  };
-    //}
-    //
-    //for (var i in nodes) {
-    //  nodes[i].name = i + ": " + nodes[i].name;
-    //}
     
     res.render('index', { title: 'Web Programming Final Project', nodes: nodes });
   });
