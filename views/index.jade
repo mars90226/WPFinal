@@ -31,16 +31,16 @@ block content
     var linkCount = 0;
     tempNodes.forEach(function(tempNode) {
       for(var i = 0; i < tempNode.linkTo.length; i++){
-        console.log(tempNode.name + " " + tempNodes[tempNode.linkTo[i]].name);
+        //console.log(tempNode.name + " " + tempNodes[tempNode.linkTo[i]].name);
         links[linkCount++] = {source: nodes[ tempNode.name ], target: nodes[ tempNodes[tempNode.linkTo[i]].name ], type: "suit"};
       }
     });
 
 
-    var width = 960,
-        height = 450;
+    var width = 1200,
+        height = 650;
         
-    var radius = [30, 60]
+    var radius = [20, 40]
 
     var force = d3.layout.force()
         .nodes(d3.values(nodes))
@@ -61,7 +61,7 @@ block content
       .enter().append("marker")
         .attr("id", function(d) { return d; })
         .attr("viewBox", "0 -5 10 10")
-        .attr("refX", 25)
+        .attr("refX", 20)
         .attr("refY", 0)
         .attr("markerWidth", 10)
         .attr("markerHeight", 10)
@@ -83,8 +83,22 @@ block content
       .append("svg:circle")
         .attr("r", radius[0])
         .call(force.drag)
-        .on("mouseover", function(d) { d3.select(this).transition().attr("r", radius[1]); })
-        .on("mouseout", function(d) { d3.select(this).transition().attr("r", radius[0]); });
+        .on("mouseover", function(d) {
+          d3.select(this).transition().attr("r", radius[1]);
+          var text = document.getElementById(d.url);
+          text.setAttribute("fill", "rgb(230, 200, 50)");
+          text.setAttribute("z-index", "10000");
+          text.style.fontSize = "30px";
+          var g = text.parentNode;
+          g.appendChild(text);
+        })
+        .on("mouseout", function(d) {
+          d3.select(this).transition().attr("r", radius[0]);
+          var text = document.getElementById(d.url);
+          text.setAttribute("fill", "");
+          text.setAttribute("z-index", "0");
+          text.style.fontSize = "14px";
+        });
         //.on("click", click);
 
     var text = svg.append("g").selectAll("text")
@@ -92,7 +106,8 @@ block content
       .enter().append("text")
         .attr("x", 8)
         .attr("y", ".31em")
-        .text(function(d) { return d.name; });
+        .text(function(d) { return d.name; })
+        .attr("id", function(d) { return d.url; });
 
     // Use elliptical arc path segments to doubly-encode directionality.
     function tick() {
