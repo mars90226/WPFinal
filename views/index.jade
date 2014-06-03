@@ -47,7 +47,7 @@ block content
         .links(links)
         .size([width, height])
         .linkDistance(150)
-        .charge(-450)
+        .charge(-300)
         .on("tick", tick)
         .start();
 
@@ -61,10 +61,10 @@ block content
       .enter().append("marker")
         .attr("id", function(d) { return d; })
         .attr("viewBox", "0 -5 10 10")
-        .attr("refX", 20)
+        .attr("refX", 27)
         .attr("refY", 0)
-        .attr("markerWidth", 10)
-        .attr("markerHeight", 10)
+        .attr("markerWidth", 6)
+        .attr("markerHeight", 6)
         .attr("orient", "auto")
       .append("path")
         .attr("d", "M0,-5L10,0L0,5");
