@@ -5,6 +5,7 @@ var URL = require('url');
 var Sitemap = require('./sitemap');
 
 var maxConnection = 20;
+var maxLevel = 100;
 
 function validUrl(url) {
   if (url === undefined) return false;
@@ -25,7 +26,17 @@ function grabUrl(url, callback) {
   var sitemap = new Sitemap.node();
   var jobCount = 0;
 
-  function crawl(url, cut) {
+  if (!validUrl(url)) {
+    sitemap.put(url, new Sitemap.node({title: "Not a valid webpage url", url: url}, sitemap));
+    callback(sitemap);
+    return;
+  }
+
+  //var prefix = URL.parse(url).pathname;
+  //prefix = prefix.substring(0, prefix.lastIndexOf('/'));
+
+  function crawl(url, cut, level) {
+    //console.log("Before level: " + level);
     request({
       url: url,
       encoding: 'binary',
@@ -68,7 +79,8 @@ function grabUrl(url, callback) {
         //if (parent.parent !== undefined)
         //  console.log("Children: " + parent.parent.childrenSize());
 
-        if (cut !== true) {
+        //console.log("Level: " + level);
+        if (cut !== true && level <= maxLevel) {
           $('a').each(function(index, a) {
             //console.log("Href: " + $(a).attr('href'));
             var href = $(a).attr('href');
@@ -78,7 +90,8 @@ function grabUrl(url, callback) {
             if (validUrl(href)) {
               var match1 = href.match(/\.\.\//g);
               tmpUrl = tmpUrl.substring(0, tmpUrl.lastIndexOf('/'));
-              var prefix = tmpUrl;
+              //var prefix = tmpUrl;
+              var prefix = URL.parse(tmpUrl).pathname;
               if (match1) {
                 for (var i = 0; i < match1.length; i++) {
                   tmpUrl = tmpUrl.substring(0, tmpUrl.lastIndexOf('/'));
@@ -96,7 +109,9 @@ function grabUrl(url, callback) {
               } else {
                 tmpUrl = tmpUrl + '/' + href;
               }
-              var tmpPrefix = tmpUrl.substring(0, tmpUrl.lastIndexOf('/'));
+              //var tmpPrefix = tmpUrl.substring(0, tmpUrl.lastIndexOf('/'));
+              var tmpPrefix = URL.parse(tmpUrl).pathname;
+              tmpPrefix = tmpPrefix.substring(0, tmpPrefix.lastIndexOf('/'));
               if (tmpUrl[tmpUrl.length-1] === '/') {
                 tmpUrl = tmpUrl.substring(0, tmpUrl.length - 1);
               }
@@ -109,7 +124,10 @@ function grabUrl(url, callback) {
                   parent.put(tmpUrl, node);
                   cache[tmpUrl] = node;
                   process.nextTick(function(){
-                    crawl(tmpUrl, prefix !== tmpPrefix);
+                    //console.log("Prefix: " + prefix);
+                    //console.log("tmpPrefix: " + tmpPrefix);
+                    crawl(tmpUrl, tmpPrefix !== prefix, level + 1);
+                    //crawl(tmpUrl, tmpPrefix.substring(0, prefix.length) !== prefix, level + 1);
                   });
                 }
               }
@@ -123,7 +141,7 @@ function grabUrl(url, callback) {
     });
   }
   jobCount++;
-  crawl(url, false);
+  crawl(url, false, 0);
 }
 
 // 'http://mirlab.org/jang/courses/webProgramming/onlineBook.asp'

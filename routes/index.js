@@ -1,6 +1,7 @@
 var express = require('express');
 var router = express.Router();
 var crawler = require('../crawler');
+var URL = require('url');
 
 /* GET home page. */
 router.get('/', function(req, res) {
@@ -8,7 +9,7 @@ router.get('/', function(req, res) {
   if (req.query.url !== undefined) {
     url = req.query.url;
   }
-  if (!url.match(/^http:\/\//)) {
+  if (URL.parse(url).protocol === null) {
     url = "http://" + url;
   }
   
